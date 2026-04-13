@@ -1,8 +1,14 @@
+
+
 %{
     
 #include<stdio.h>
 int count = 0;
+
 %}
+
+
+
 
 %%
 
@@ -35,7 +41,7 @@ int count = 0;
 "=="|"!="|"<="|">="|"&&"|"||"|"++"|"--"|"+="|"-="|"+"|"-"|"*"|"/"|"="|"<"|">"|"!"|"%"  { printf("Operator: %s\n", yytext); }
 
 \+                     { printf("Plus: %s\n", yytext); }
-\*                    { printf("Multiplicaton: %s\n", yytext); }
+\*                     { printf("Multiplicaton: %s\n", yytext); }
 \t                     { printf("tab: %s\n", yytext); }
 
 [a-z | A-Z]+   {printf("Length  of Sttring: %d",yyleng); }
@@ -47,13 +53,18 @@ int count = 0;
 
 %%
 
-int yywrap()
-{
-    return 1;
-}
+
+
 
 int main(){
     printf("it is Flex\n");
     yylex();
     return 0;
+}
+
+
+
+int yywrap()
+{
+    return 1;
 }

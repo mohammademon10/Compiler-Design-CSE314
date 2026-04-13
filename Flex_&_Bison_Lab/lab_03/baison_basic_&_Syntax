@@ -1,0 +1,9 @@
+//file name 
+
+
+
+//terminal command:
+ flex file_name.l
+ bison -a file_name.y
+ gcc lex.yy.c file_name.tab.c -o file_name 
+ ./file_name

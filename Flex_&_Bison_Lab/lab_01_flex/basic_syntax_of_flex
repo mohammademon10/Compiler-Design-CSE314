@@ -1,0 +1,38 @@
+//file name: .y
+
+//Basic Syntax:
+
+//section-01
+%{
+#include <stdio.h>
+%}
+
+
+/* Section 2: Rules */
+%%
+
+{digit}+    { printf("Found an integer: %s\n", yytext); }
+[a-z]+      { printf("Found a word: %s\n", yytext); }
+.           { /* Ignore other characters */ }
+
+%%
+
+
+
+
+/* Section 3: User Subroutines (C code) */
+int main() {
+    print("lexer started...\n");
+    yylex();
+    return 0;
+}
+
+
+int yywrap() 
+{ return 1;} 
+
+
+//terminal command:
+ flex file_name.l
+ gcc lex.yy.c -o file_name 
+ ./file_name
