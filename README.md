@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- Banner -->
-<img src="assets/banner.png" alt="Compiler Design CSE314 Banner" width="100%"/>
+<img src="" alt="Compiler Design CSE314 Banner" width="100%"/>
 
 # 🛠️ Compiler Design — CSE314
 
