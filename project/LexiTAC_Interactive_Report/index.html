@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexiTAC - Interactive Project Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#151e2e',
+                            900: '#0f172a',
+                            950: '#020617',
+                        },
+                        cyan: {
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                        },
+                        purple: {
+                            500: '#a855f7',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
+                        sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 400px;
+        }
+        
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .nav-link.active {
+            color: #22d3ee;
+            border-right: 4px solid #22d3ee;
+            background: rgba(34, 211, 238, 0.1);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background-color: #cbd5e1;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out both;
+            margin: 0 2px;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="font-sans antialiased flex flex-col md:flex-row min-h-screen">
+
+    <!-- Chosen Palette: Dark Slate IDE Theme (slate-900, slate-800, cyan-400, purple-500) -->
+    <!-- Application Structure Plan: A dashboard-style layout with a fixed sidebar for rapid navigation. The structure translates the linear academic report into modular, interactive components: an overview section, an interactive pipeline visualization (to explain methodology), an interactive test case runner (to demonstrate results dynamically), a performance metrics section (charting O(n) complexities), and an engineering mapping/team section. This layout is chosen because compiler design is highly procedural and data-driven; breaking it into interactive modules allows users to explore the transformation of code from source to TAC at their own pace. -->
+    <!-- Visualization & Content Choices: 
+         1. Architecture Pipeline -> Goal: Organize/Explain -> Viz: Interactive horizontal step tracker. Clicking steps reveals detailed info. -> Justification: Breaks down the 5 phases of LexiTAC visually, mirroring the system architecture diagram without using SVG.
+         2. Test Cases & Results -> Goal: Inform/Interact -> Viz: Clickable list of test cases dynamically updating a "Terminal Output" UI block. -> Justification: Replicates the "Web Simulator" feel mentioned in the report, allowing users to see the direct mapping between input, symbol table, and TAC.
+         3. AI Predictor -> Goal: Interact/Simulate -> Viz: Text input hitting Gemini API generating structured JSON output. -> Justification: Allows infinite test cases and demonstrates LLM reasoning mapping to compiler logic.
+         4. Performance Analysis -> Goal: Compare/Inform -> Viz: Chart.js Line Chart showing O(n) vs O(k) complexity scaling. -> Justification: Quantifies the performance claims in the report visually. 
+         Library/Method: Tailwind CSS for layout, Vanilla JS for state management and interactions, Chart.js for data visualization. 
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="w-full md:w-64 bg-slate-950 border-r border-slate-800 fixed md:h-screen z-20 flex flex-col overflow-y-auto">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">LexiTAC</h1>
+            <p class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Compiler Design Project</p>
+        </div>
+        <ul class="flex-1 mt-4" id="nav-menu">
+            <li><a href="#overview" class="nav-link block py-3 px-6 text-slate-300 hover:text-cyan-400 hover:bg-slate-800/50 transition-colors" data-target="overview">&#x1F3E0; Overview</a></li>
+            <li><a href="#pipeline" class="nav-link block py-3 px-6 text-slate-300 hover:text-cyan-400 hover:bg-slate-800/50 transition-colors" data-target="pipeline">&#x2699;&#xFE0F; Architecture</a></li>
+            <li><a href="#simulator" class="nav-link block py-3 px-6 text-slate-300 hover:text-cyan-400 hover:bg-slate-800/50 transition-colors" data-target="simulator">&#x1F4BB; Simulator Demo</a></li>
+            <li><a href="#performance" class="nav-link block py-3 px-6 text-slate-300 hover:text-cyan-400 hover:bg-slate-800/50 transition-colors" data-target="performance">&#x1F4CA; Performance</a></li>
+            <li><a href="#engineering" class="nav-link block py-3 px-6 text-slate-300 hover:text-cyan-400 hover:bg-slate-800/50 transition-colors" data-target="engineering">&#x1F4D0; Engineering Mapping</a></li>
+            <li><a href="#team" class="nav-link block py-3 px-6 text-slate-300 hover:text-cyan-400 hover:bg-slate-800/50 transition-colors" data-target="team">&#x1F465; Team & Info</a></li>
+        </ul>
+        <div class="p-6 border-t border-slate-800">
+            <div class="text-xs text-slate-500">Daffodil International University<br>CSE 314: Lab Project</div>
+        </div>
+    </nav>
+
+    <main class="flex-1 md:ml-64 p-6 md:p-10 lg:p-12 max-w-7xl mx-auto w-full pt-24 md:pt-10">
+        
+        <section id="overview" class="mb-24 scroll-mt-24">
+            <header class="mb-10">
+                <div class="inline-block px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-semibold tracking-wide mb-4 border border-cyan-800/50">INTRODUCTION</div>
+                <h2 class="text-4xl md:text-5xl font-bold mb-6 text-white leading-tight">Bridging Compiler Theory <br/><span class="text-slate-400">with Interactive Practice</span></h2>
+                <p class="text-lg text-slate-300 max-w-3xl leading-relaxed">
+                    Welcome to the interactive report for <strong>LexiTAC</strong>. This section outlines the background and motivation behind our compiler front-end project. We built a modular compiler front-end from scratch using Flex, Bison, and C to demystify how raw source text is transformed into Three-Address Code (TAC).
+                </p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="glass-panel p-6 rounded-xl hover:border-cyan-500/50 transition-colors">
+                    <div class="text-3xl mb-4">&#x1F3AF;</div>
+                    <h3 class="text-xl font-semibold mb-2 text-cyan-400">The Problem</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Students in Compiler Design courses often struggle with understanding tokenization, symbol tables, and parse tree evaluations. Existing CLI tools are too opaque, while production compilers are too complex.</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl hover:border-purple-500/50 transition-colors">
+                    <div class="text-3xl mb-4">&#x1F4A1;</div>
+                    <h3 class="text-xl font-semibold mb-2 text-purple-400">Our Solution</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">LexiTAC implements a fully functional front-end that processes arithmetic assignment expressions, enforcing operator precedence and generating intermediate code, paired with a web-based visualization.</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl hover:border-cyan-500/50 transition-colors">
+                    <div class="text-3xl mb-4">&#x1F6E0;&#xFE0F;</div>
+                    <h3 class="text-xl font-semibold mb-2 text-cyan-400">Core Technologies</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Built utilizing industry-standard tools: <strong>Flex</strong> (Lexical Analysis), <strong>Bison</strong> (LALR(1) Syntax Analysis), and <strong>C11</strong> standard, fully automated via GNU Make.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="pipeline" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-block px-3 py-1 rounded-full bg-purple-900/30 text-purple-400 text-xs font-semibold tracking-wide mb-4 border border-purple-800/50">SYSTEM ARCHITECTURE</div>
+                <h2 class="text-3xl font-bold mb-4 text-white">The Compilation Pipeline</h2>
+                <p class="text-slate-300 max-w-3xl leading-relaxed">
+                    This section details the step-by-step methodology of the LexiTAC system. Understanding the linear flow of data from source input to the final TAC generation is critical. Click through the interactive stages below to explore how LexiTAC processes code.
+                </p>
+            </div>
+
+            <div class="glass-panel rounded-2xl overflow-hidden">
+                <div class="flex flex-col sm:flex-row border-b border-slate-700/50" id="pipeline-tabs">
+                </div>
+                <div class="p-8 min-h-[300px] flex flex-col justify-center relative" id="pipeline-content">
+                </div>
+            </div>
+        </section>
+
+        <section id="simulator" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-block px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-semibold tracking-wide mb-4 border border-cyan-800/50">IMPLEMENTATION & RESULTS</div>
+                <h2 class="text-3xl font-bold mb-4 text-white">Interactive Test Simulator</h2>
+                <p class="text-slate-300 max-w-3xl leading-relaxed">
+                    This section dynamically demonstrates the results of our implementation. Select predefined test cases, or <strong>use the AI Predictor</strong> to simulate compiler behavior on custom expressions!
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-4 flex flex-col gap-3">
+                    <div id="test-case-selector" class="flex flex-col gap-3">
+                        <!-- Populated by JS -->
+                    </div>
+                    
+                    <div class="mt-4 p-4 glass-panel rounded-xl border border-purple-500/50 bg-gradient-to-br from-slate-900 to-purple-900/20">
+                        <h3 class="font-bold text-white mb-2 flex items-center gap-2">✨ AI Custom Predictor</h3>
+                        <p class="text-xs text-slate-400 mb-3">Powered by Gemini. Type any valid arithmetic assignment expression to see predicted output.</p>
+                        <div class="flex flex-col gap-2">
+                            <input type="text" id="custom-expr-input" placeholder="e.g., v = (d + u * t) / 2" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-purple-500">
+                            <button id="btn-predict-tac" class="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold py-2 px-4 rounded transition-all flex justify-center items-center gap-2">
+                                ✨ Predict TAC
+                            </button>
+                        </div>
+                        <p id="predict-loading" class="text-xs text-purple-400 mt-3 hidden text-center animate-pulse">Analyzing expression with Gemini API...</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8 glass-panel rounded-xl p-6 font-mono text-sm relative border-slate-700 transition-colors duration-300" id="terminal-container">
+                    <div class="absolute top-0 right-0 bg-slate-800 text-xs px-3 py-1 rounded-bl-lg rounded-tr-xl text-slate-400 border-b border-l border-slate-700" id="terminal-badge">Terminal Output</div>
+                    
+                    <div class="mb-6 mt-4">
+                        <div class="text-slate-500 mb-1">// 1. Source Expression</div>
+                        <div class="text-cyan-400 text-lg bg-slate-950 p-3 rounded border border-slate-800 overflow-x-auto" id="sim-input"></div>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="text-slate-500 mb-2">// 2. Generated Symbol Table</div>
+                        <div class="overflow-x-auto rounded border border-slate-800">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-900 text-slate-400 text-xs uppercase">
+                                    <tr>
+                                        <th class="p-3 border-b border-slate-800">Variable</th>
+                                        <th class="p-3 border-b border-slate-800">Internal ID</th>
+                                        <th class="p-3 border-b border-slate-800">Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sim-symtab" class="text-slate-300 bg-slate-950">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-slate-500 mb-2">// 3. Three-Address Code (TAC)</div>
+                        <div class="bg-slate-950 p-4 rounded border border-slate-800 text-purple-400 whitespace-pre-wrap leading-loose" id="sim-tac"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="performance" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-block px-3 py-1 rounded-full bg-purple-900/30 text-purple-400 text-xs font-semibold tracking-wide mb-4 border border-purple-800/50">PERFORMANCE ANALYSIS</div>
+                <h2 class="text-3xl font-bold mb-4 text-white">Complexity & Efficiency</h2>
+                <p class="text-slate-300 max-w-3xl leading-relaxed">
+                    This section illustrates the operational efficiency of the LexiTAC system. All phases (Lexical Analysis, Parsing, and TAC Generation) operate in linear time complexity O(n) relative to the input length, ensuring high efficiency.
+                </p>
+            </div>
+
+            <div class="glass-panel p-8 rounded-2xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="border-l-4 border-cyan-500 pl-4">
+                        <h4 class="text-white font-bold mb-1">Time Complexity</h4>
+                        <p class="text-cyan-400 text-2xl font-mono">O(n)</p>
+                        <p class="text-sm text-slate-400 mt-2">Lexer, Parser, and TAC emission all scale linearly with input expression length.</p>
+                    </div>
+                    <div class="border-l-4 border-purple-500 pl-4">
+                        <h4 class="text-white font-bold mb-1">Space Complexity</h4>
+                        <p class="text-purple-400 text-2xl font-mono">O(k) & O(t)</p>
+                        <p class="text-sm text-slate-400 mt-2">Symbol table maxes at 256 variables (k). Parse stack and temporaries (t) scale proportionally to nesting depth.</p>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="engineering" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-block px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-semibold tracking-wide mb-4 border border-cyan-800/50">ACADEMIC ALIGNMENT</div>
+                <h2 class="text-3xl font-bold mb-4 text-white">Engineering Standards Mapping</h2>
+                <p class="text-slate-300 max-w-3xl leading-relaxed">
+                    This section maps the LexiTAC project against required academic and engineering outcomes (POs and EPs). It validates how building a compiler front-end solves complex engineering problems using foundational computing profiles.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="glass-panel rounded-xl overflow-hidden">
+                    <div class="bg-slate-900 p-4 border-b border-slate-800">
+                        <h3 class="font-bold text-white flex justify-between items-center">
+                            <span>Program Outcomes (PO)</span>
+                            <span class="text-xs font-normal text-slate-500 px-2 py-1 bg-slate-800 rounded">Table 4.1</span>
+                        </h3>
+                    </div>
+                    <div class="p-0">
+                        <table class="w-full text-sm">
+                            <tr class="border-b border-slate-800 hover:bg-slate-800/30">
+                                <td class="p-4 font-mono text-cyan-400 w-16">PO1</td>
+                                <td class="p-4 text-slate-300">Applied computing fundamentals: algorithms, data structures (struct arrays, recursive descent), and systems programming in C11.</td>
+                            </tr>
+                            <tr class="border-b border-slate-800 hover:bg-slate-800/30">
+                                <td class="p-4 font-mono text-cyan-400">PO2</td>
+                                <td class="p-4 text-slate-300">Analyzed formal grammar rules, identified and resolved shift-reduce conflicts, verified parse tree correctness and TAC accuracy.</td>
+                            </tr>
+                            <tr class="border-b border-slate-800 hover:bg-slate-800/30">
+                                <td class="p-4 font-mono text-cyan-400">PO3</td>
+                                <td class="p-4 text-slate-300">Designed and implemented a complete multi-tool build system (Flex + Bison + GCC + Make) solving a specified compiler design problem.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="p-4 font-mono text-cyan-400">PO10</td>
+                                <td class="p-4 text-slate-300">Documented the project comprehensively; developed a public web simulator; published on GitHub.</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="glass-panel p-5 rounded-xl border-l-4 border-l-purple-500">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-white">EP1: Depth of Knowledge</h4>
+                            <span class="text-xs text-purple-400 font-mono">DFA/NFA & LALR</span>
+                        </div>
+                        <p class="text-sm text-slate-400">Requires understanding of formal language theory, DFA construction, parsing algorithms, and intermediate code generation.</p>
+                    </div>
+                    <div class="glass-panel p-5 rounded-xl border-l-4 border-l-purple-500">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-white">EP2: Conflicting Requirements</h4>
+                            <span class="text-xs text-purple-400 font-mono">CLI vs Web</span>
+                        </div>
+                        <p class="text-sm text-slate-400">Balances correctness (no shift-reduce conflicts) with simplicity (student-understandable code), and CLI power with browser accessibility.</p>
+                    </div>
+                    <div class="glass-panel p-5 rounded-xl border-l-4 border-l-purple-500">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-white">EP4: Familiarity of Issues</h4>
+                            <span class="text-xs text-purple-400 font-mono">Memory Safety</span>
+                        </div>
+                        <p class="text-sm text-slate-400">Addressed classic compiler construction challenges: token ambiguity, parser conflicts, memory safety, and cross-language logic replication.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="team" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-block px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs font-semibold tracking-wide mb-4 border border-slate-700">PROJECT TEAM</div>
+                <h2 class="text-3xl font-bold mb-4 text-white">Submitted By</h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-panel p-6 rounded-xl border border-cyan-500/30 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-cyan-500 text-slate-900 text-xs font-bold px-2 py-1 rounded-bl-lg">Team Leader</div>
+                    <div class="w-12 h-12 rounded-full bg-cyan-900 flex items-center justify-center text-xl mb-4 text-cyan-400">&#x1F468;&#x200D;&#x1F4BB;</div>
+                    <h3 class="font-bold text-white mb-1">Md. Emon Hossain</h3>
+                    <p class="text-xs font-mono text-cyan-400 mb-3">ID: 232-15-818</p>
+                    <p class="text-xs text-slate-400">Architect, TAC Generator, Web Dev, Standalone C.</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-xl mb-4 text-slate-400">&#x1F468;&#x200D;&#x1F4BB;</div>
+                    <h3 class="font-bold text-white mb-1">Mostafizur Rahman Antu</h3>
+                    <p class="text-xs font-mono text-slate-400 mb-3">ID: 241-15-631</p>
+                    <p class="text-xs text-slate-400">Lexical Analyst, Symbol Table Designer, Integrator.</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-xl mb-4 text-slate-400">&#x1F468;&#x200D;&#x1F4BB;</div>
+                    <h3 class="font-bold text-white mb-1">Nahid Al Galib</h3>
+                    <p class="text-xs font-mono text-slate-400 mb-3">ID: 241-15-577</p>
+                    <p class="text-xs text-slate-400">System testing and test case formulation.</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-xl mb-4 text-slate-400">&#x1F469;&#x200D;&#x1F4BB;</div>
+                    <h3 class="font-bold text-white mb-1">Mahjabin Sultana</h3>
+                    <p class="text-xs font-mono text-slate-400 mb-3">ID: 241-15-899</p>
+                    <p class="text-xs text-slate-400">System testing and result verification.</p>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center text-slate-500 text-sm">
+                <p>Supervised by Rabeya Khatun, Lecturer</p>
+                <p>Dept. of Computer Science and Engineering, Daffodil International University | April 21, 2026</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Floating Tutor Button -->
+    <button id="tutor-toggle" class="fixed bottom-6 right-6 bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-purple-500/50 rounded-full p-4 shadow-lg shadow-purple-900/20 z-50 flex items-center justify-center transition-all group">
+        <span class="text-xl">✨</span>
+        <span class="ml-2 font-bold max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap md:max-w-xs md:ml-2">Ask LexiTutor</span>
+    </button>
+
+    <!-- Tutor Panel -->
+    <div id="tutor-panel" class="fixed bottom-24 right-6 w-80 md:w-96 glass-panel border border-slate-600 rounded-xl shadow-2xl z-50 hidden flex flex-col overflow-hidden">
+        <div class="bg-gradient-to-r from-slate-900 to-slate-800 p-4 border-b border-slate-700 flex justify-between items-center">
+            <h3 class="text-white font-bold flex items-center gap-2">✨ LexiTutor AI</h3>
+            <button id="tutor-close" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+        </div>
+        <div id="tutor-chat" class="p-4 h-80 overflow-y-auto flex flex-col gap-3 text-sm bg-slate-900/50">
+            <div class="bg-slate-800 text-slate-200 p-3 rounded-lg rounded-tl-none self-start max-w-[90%] border border-slate-700 shadow-sm">
+                Hi! I'm your AI Teaching Assistant for LexiTAC. Ask me anything about compiler design, Flex, Bison, or the inner workings of Three-Address Code!
+            </div>
+        </div>
+        <div class="p-3 border-t border-slate-700 bg-slate-900 flex gap-2">
+            <input type="text" id="tutor-input" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm transition-all" placeholder="Ask a question...">
+            <button id="tutor-send" class="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg transition-colors font-bold shadow-md">✨</button>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = ""; // Runtime provides this
+
+        // --- GEMINI API HELPER ---
+        async function fetchWithRetry(url, options, retries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const err = await response.json().catch(()=>({}));
+                        throw new Error(`HTTP ${response.status}: ${err.error?.message || 'Unknown error'}`);
+                    }
+                    return await response.json();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                    await new Promise(res => setTimeout(res, delays[i]));
+                }
+            }
+        }
+
+        const pipelineData = [
+            {
+                id: 'step1',
+                title: 'Source Input',
+                icon: '&#x1F4DD;',
+                desc: 'Raw arithmetic assignment expressions entered by the user (e.g., p = i + r * 60). Passed as a character stream.',
+                file: 'index.html / CLI input'
+            },
+            {
+                id: 'step2',
+                title: 'Lexical Analysis',
+                icon: '&#x1F50D;',
+                desc: 'Flex scans the input, matches regex patterns, and produces a stream of typed tokens (IDENTIFIER, NUMBER, PLUS, ASSIGN). Operates in O(n) time.',
+                file: 'lexer.l'
+            },
+            {
+                id: 'step3',
+                title: 'Symbol Table',
+                icon: '&#x1F5C4;&#xFE0F;',
+                desc: 'Every valid identifier is registered in a struct array. Each receives a unique internal ID (id1, id2...) and type (int). Handles duplicate detection.',
+                file: 'lexer.l (embedded C)'
+            },
+            {
+                id: 'step4',
+                title: 'Syntax Analysis',
+                icon: '&#x1F332;',
+                desc: 'Bison validates grammar using the LALR(1) shift-reduce algorithm. Enforces operator precedence (%left PLUS MINUS, %right UMINUS) building the parse tree.',
+                file: 'parser.y'
+            },
+            {
+                id: 'step5',
+                title: 'TAC Generation',
+                icon: '&#x1F4BE;',
+                desc: 'Semantic actions enclosed in Bison rules emit Three-Address Code. Creates temporaries (t1, t2) traversing bottom-up for correct evaluation order.',
+                file: 'parser.y (semantic actions)'
+            }
+        ];
+
+        const testCases = [
+            {
+                id: 'TC1',
+                name: 'Basic Evaluation',
+                input: 'p = i + r * 60',
+                sym: [
+                    { name: 'p', id: 'id1', type: 'int' },
+                    { name: 'i', id: 'id2', type: 'int' },
+                    { name: 'r', id: 'id3', type: 'int' }
+                ],
+                tac: 't1 = id3 * 60\nt2 = id2 + t1\nid1 = t2'
+            },
+            {
+                id: 'TC2',
+                name: 'Complex Nesting',
+                input: 'z = (a+b)*(c-d)',
+                sym: [
+                    { name: 'z', id: 'id1', type: 'int' },
+                    { name: 'a', id: 'id2', type: 'int' },
+                    { name: 'b', id: 'id3', type: 'int' },
+                    { name: 'c', id: 'id4', type: 'int' },
+                    { name: 'd', id: 'id5', type: 'int' }
+                ],
+                tac: 't1 = id2 + id3\nt2 = id4 - id5\nt3 = t1 * t2\nid1 = t3'
+            },
+            {
+                id: 'TC3',
+                name: 'Multiple Terms',
+                input: 'result = x*y + z*2',
+                sym: [
+                    { name: 'result', id: 'id1', type: 'int' },
+                    { name: 'x', id: 'id2', type: 'int' },
+                    { name: 'y', id: 'id3', type: 'int' },
+                    { name: 'z', id: 'id4', type: 'int' }
+                ],
+                tac: 't1 = id2 * id3\nt2 = id4 * 2\nt3 = t1 + t2\nid1 = t3'
+            },
+            {
+                id: 'TC4',
+                name: 'Direct Assignment',
+                input: 'ans = avg',
+                sym: [
+                    { name: 'ans', id: 'id1', type: 'int' },
+                    { name: 'avg', id: 'id2', type: 'int' }
+                ],
+                tac: 'id1 = id2'
+            }
+        ];
+
+        function initPipeline() {
+            const tabsContainer = document.getElementById('pipeline-tabs');
+            const contentContainer = document.getElementById('pipeline-content');
+
+            pipelineData.forEach((step, index) => {
+                const btn = document.createElement('button');
+                btn.className = `flex-1 py-4 px-2 text-center text-sm font-semibold border-b-2 transition-colors ${index === 0 ? 'border-cyan-400 text-cyan-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'}`;
+                btn.innerHTML = `<span class="hidden md:inline mr-2">${step.icon}</span> ${index + 1}. ${step.title.split(' ')[0]}`;
+                btn.onclick = () => renderPipelineStep(index, btn);
+                tabsContainer.appendChild(btn);
+            });
+
+            renderPipelineStep(0, tabsContainer.firstChild);
+        }
+
+        function renderPipelineStep(index, activeBtn) {
+            const tabsContainer = document.getElementById('pipeline-tabs');
+            Array.from(tabsContainer.children).forEach(btn => {
+                btn.className = 'flex-1 py-4 px-2 text-center text-sm font-semibold border-b-2 transition-colors border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30';
+            });
+            activeBtn.className = 'flex-1 py-4 px-2 text-center text-sm font-semibold border-b-2 transition-colors border-cyan-400 text-cyan-400 bg-slate-800/50';
+
+            const step = pipelineData[index];
+            const contentContainer = document.getElementById('pipeline-content');
+            
+            contentContainer.innerHTML = `
+                <div class="animate-[fadeIn_0.3s_ease-in-out]">
+                    <div class="text-6xl mb-6 opacity-80">${step.icon}</div>
+                    <div class="inline-block px-3 py-1 rounded-md bg-slate-900 text-slate-300 text-xs font-mono mb-4 border border-slate-700">Target: ${step.file}</div>
+                    <h3 class="text-2xl font-bold text-white mb-3">${step.title}</h3>
+                    <p class="text-slate-300 text-lg leading-relaxed max-w-2xl">${step.desc}</p>
+                </div>
+            `;
+        }
+
+        function initTestCases() {
+            const selectorContainer = document.getElementById('test-case-selector');
+            selectorContainer.innerHTML = '';
+            
+            testCases.forEach((tc, index) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 rounded-xl border transition-all btn-tc ${index === 0 ? 'bg-cyan-900/20 border-cyan-500/50' : 'bg-slate-900/50 border-slate-800 hover:border-slate-600'}`;
+                btn.innerHTML = `
+                    <div class="text-xs font-mono text-cyan-400 mb-1">${tc.id}</div>
+                    <div class="font-bold text-white">${tc.name}</div>
+                    <div class="text-sm text-slate-500 truncate mt-1">${tc.input}</div>
+                `;
+                btn.onclick = () => {
+                    document.querySelectorAll('.btn-tc').forEach(b => {
+                        b.className = 'w-full text-left p-4 rounded-xl border transition-all btn-tc bg-slate-900/50 border-slate-800 hover:border-slate-600';
+                    });
+                    btn.className = 'w-full text-left p-4 rounded-xl border transition-all btn-tc bg-cyan-900/20 border-cyan-500/50';
+                    renderTestCase(tc, false);
+                };
+                selectorContainer.appendChild(btn);
+            });
+
+            renderTestCase(testCases[0], false);
+        }
+
+        function renderTestCase(tc, isAiPredicted = false) {
+            const terminalContainer = document.getElementById('terminal-container');
+            const badge = document.getElementById('terminal-badge');
+            
+            if (isAiPredicted) {
+                terminalContainer.classList.add('border-purple-500/50', 'bg-purple-900/10');
+                badge.className = 'absolute top-0 right-0 bg-purple-900 text-xs px-3 py-1 rounded-bl-lg rounded-tr-xl text-purple-200 border-b border-l border-purple-500';
